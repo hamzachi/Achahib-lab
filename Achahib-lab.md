@@ -25,89 +25,13 @@ Hi, I'm **Hamza** — an IT Engineer based in Morocco with **5+ years of experie
 
 ## 🗺️ Lab Architecture
 
-```
-                    ┌─────────────────────────────────────────┐
-                    │            INTERNET / ISP               │
-                    └───────────────────┬─────────────────────┘
-                                        │
-                    ┌───────────────────▼─────────────────────┐
-                    │       OPNsense + Zenarmor  [EDGE]       │
-                    │  NAT · IDS/IPS · SNI Inspection         │
-                    │  Traffic Filtering · DoH Gateway        │
-                    │  WireGuard Client ──► VPS Gateway       │
-                    └──────┬──────────────────────┬───────────┘
-                           │                      │
-                           │              ┌───────▼────────────────────────┐
-                           │              │     Cloudflare Network         │
-                           │              │  ┌─────────────────────────┐   │
-                           │              │  │  WARP Zero Trust Tunnel │   │
-                           │              │  │  Gateway DNS (DoH)      │   │
-                           │              │  │  ZTNA → On-Prem Apps    │   │
-                           │              │  └─────────────────────────┘   │
-                           │              └────────────────────────────────┘
-                           │                      ▲
-                           │                      │ (Users connect via WARP
-                           │                      │  to access on-prem apps
-                           │                      │  through Zero Trust)
-                    ┌──────▼──────────────────────┐
-                    │       Cisco Router           │
-                    │  Distribution layer          │
-                    │  Inter-VLAN routing          │
-                    │  ACLs · QoS · VLAN policy   │
-                    └──────────────┬───────────────┘
-                                   │
-                    ┌──────────────▼───────────────┐
-                    │       Cisco Switch            │
-                    │  VLAN Trunking               │
-                    │  802.1X port enforcement     │
-                    │  Network segmentation        │
-                    └──┬───────────────────────────┘
-                       │
-     ┌─────────────────┼──────────────────────────────────────┐
-     │                 │                    │                  │
-┌────▼─────┐    ┌──────▼────┐    ┌──────────▼──┐    ┌────────▼────┐
-│ VLAN 1   │    │ VLAN 11   │    │  VLAN 20    │    │  VLAN 44   │
-│ MGMT     │    │ WIFI      │    │  LABs       │    │  VOIP      │
-│(Default) │    │           │    │             │    │            │
-└────┬─────┘    └───────────┘    └─────────────┘    └────────────┘
-     │
-┌────▼────────────────────────────────────────────────────────────┐
-│                    VLAN 1 — Management / Servers                │
-│                                                                 │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐       │
-│  │VMware    │  │Hyper-V   │  │Win Server│  │Cisco ISE │       │
-│  │ESXi      │  │          │  │ADDC·DNS  │  │AAA·NAC   │       │
-│  │          │  │          │  │DHCP·GPO  │  │RADIUS    │       │
-│  └──────────┘  └──────────┘  └────┬─────┘  └──────────┘       │
-│                                   │                             │
-│  ┌──────────┐  ┌──────────┐  ┌────▼─────┐  ┌──────────┐       │
-│  │Wazuh     │  │Zabbix    │  │Azure Cloud│  │OpenVAS   │       │
-│  │SIEM·EDR  │  │Monitor   │  │Hybrid AD │  │Vuln Scan │       │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘       │
-│                                                                 │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐                      │
-│  │Nextcloud │  │Rudder    │  │UrBackup  │                      │
-│  │Priv Cloud│  │Automation│  │Backup    │                      │
-│  └──────────┘  └──────────┘  └──────────┘                      │
-└─────────────────────────────────────────────────────────────────┘
+<div align="center">
 
-     ┌─────────────┐    ┌─────────────┐
-     │  VLAN 50   │    │  VLAN 98   │    ┌─────────────┐  ┌─────────────┐
-     │  DMZ       │    │  INT-LABs  │    │  VLAN 100  │  │  VLAN 101  │
-     │            │    │            │    │  HOME      │  │  Test      │
-     └─────────────┘    └─────────────┘    └─────────────┘  └─────────────┘
+![Achahib Lab Network Topology](./network/diagrams/achahib_lab_topology.svg)
 
-                    ╔═════════════════════════════════╗
-                    ║        VPN Architecture         ║
-                    ║                                 ║
-                    ║  OPNsense WireGuard Client      ║
-                    ║         ──────►                 ║
-                    ║       VPS (WG Server)           ║
-                    ║         ──────►                 ║
-                    ║    OpenVPN Gateway              ║
-                    ║  (Double Tunnel: WG → OVPN)     ║
-                    ╚═════════════════════════════════╝
-```
+</div>
+
+> **Legend:** Solid lines = physical connections · Orange dashed = Cloudflare Zero Trust tunnel · Blue dashed = Azure AD hybrid sync
 
 ---
 
