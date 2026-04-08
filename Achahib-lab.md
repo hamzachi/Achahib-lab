@@ -27,7 +27,7 @@ Hi, I'm **Hamza** — an IT Engineer based in Morocco with **5+ years of experie
 
 <div align="center">
 
-![Achahib Lab Network Topology](./network/diagrams/achahib_lab_topology.svg)
+![Achahib Lab Network Topology](achahib_lab_topology.svg)
 
 </div>
 
