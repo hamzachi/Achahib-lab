@@ -197,6 +197,6 @@ This proves that:
 
 ## 🔗 Related
 
-- [Lab Architecture Overview](../../README.md)
+- [Lab Architecture Overview](README.md)
 - [OPNsense Configuration](../network/opnsense/)
 - [Azure Hybrid AD Setup](../servers/azure/)
