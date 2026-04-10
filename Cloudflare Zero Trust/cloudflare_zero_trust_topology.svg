@@ -1,0 +1,192 @@
+<svg width="100%" viewBox="0 0 680 870" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>Cloudflare Zero Trust — Achahib Lab topology</title>
+<desc>End-to-end Zero Trust access flow: End user with WARP to Cloudflare network then OPNsense then internal apps. Identity via Azure AD, device posture via WARP.</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <style>
+    .th { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 14px; font-weight: 500; fill: #26215C; }
+    .ts { font-family: ui-sans-serif, system-ui, sans-serif; font-size: 12px; font-weight: 400; fill: #534AB7; }
+    .c-gray rect { fill: #F1EFE8; stroke: #5F5E5A; }
+    .c-gray .th { fill: #2C2C2A; }
+    .c-gray .ts { fill: #5F5E5A; }
+    .c-amber rect { fill: #FAEEDA; stroke: #854F0B; }
+    .c-amber .th { fill: #412402; }
+    .c-amber .ts { fill: #633806; }
+    .c-blue rect { fill: #E6F1FB; stroke: #185FA5; }
+    .c-blue .th { fill: #042C53; }
+    .c-blue .ts { fill: #185FA5; }
+    .c-red rect { fill: #FCEBEB; stroke: #A32D2D; }
+    .c-red .th { fill: #501313; }
+    .c-red .ts { fill: #791F1F; }
+    .c-teal rect { fill: #E1F5EE; stroke: #0F6E56; }
+    .c-teal .th { fill: #04342C; }
+    .c-teal .ts { fill: #085041; }
+    .arr { stroke: #888780; stroke-width: 1.5; fill: none; }
+  </style>
+</defs>
+
+<!-- END USER -->
+<g class="c-gray">
+  <rect x="240" y="20" width="200" height="56" rx="10" stroke-width="0.5"/>
+  <text class="th" x="340" y="40" text-anchor="middle" dominant-baseline="central">End user device</text>
+  <text class="ts" x="340" y="58" text-anchor="middle" dominant-baseline="central">Cloudflare WARP connected</text>
+</g>
+
+<path d="M340,76 L340,108" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<!-- CLOUDFLARE NETWORK -->
+<g class="c-amber">
+  <rect x="30" y="108" width="620" height="280" rx="14" stroke-width="0.5"/>
+  <text class="th" x="340" y="128" text-anchor="middle" dominant-baseline="central">Cloudflare Zero Trust network</text>
+</g>
+
+<!-- CF Access -->
+<g class="c-amber">
+  <rect x="55" y="148" width="175" height="110" rx="10" stroke-width="0.5"/>
+  <text class="th" x="142" y="170" text-anchor="middle" dominant-baseline="central">Cloudflare Access</text>
+  <text class="ts" x="142" y="189" text-anchor="middle" dominant-baseline="central">Identity check</text>
+  <text class="ts" x="142" y="205" text-anchor="middle" dominant-baseline="central">Device posture (WARP)</text>
+  <text class="ts" x="142" y="221" text-anchor="middle" dominant-baseline="central">Policy enforcement</text>
+  <text class="ts" x="142" y="237" text-anchor="middle" dominant-baseline="central">Per-app, not network</text>
+</g>
+
+<!-- CF Gateway -->
+<g class="c-amber">
+  <rect x="252" y="148" width="175" height="110" rx="10" stroke-width="0.5"/>
+  <text class="th" x="339" y="170" text-anchor="middle" dominant-baseline="central">Cloudflare Gateway</text>
+  <text class="ts" x="339" y="189" text-anchor="middle" dominant-baseline="central">DNS over HTTPS (DoH)</text>
+  <text class="ts" x="339" y="205" text-anchor="middle" dominant-baseline="central">Category filtering</text>
+  <text class="ts" x="339" y="221" text-anchor="middle" dominant-baseline="central">Malware / phishing block</text>
+  <text class="ts" x="339" y="237" text-anchor="middle" dominant-baseline="central">Encrypted DNS queries</text>
+</g>
+
+<!-- CF Tunnel -->
+<g class="c-amber">
+  <rect x="449" y="148" width="175" height="110" rx="10" stroke-width="0.5"/>
+  <text class="th" x="536" y="170" text-anchor="middle" dominant-baseline="central">Cloudflare Tunnel</text>
+  <text class="ts" x="536" y="189" text-anchor="middle" dominant-baseline="central">Outbound-only connector</text>
+  <text class="ts" x="536" y="205" text-anchor="middle" dominant-baseline="central">No inbound ports open</text>
+  <text class="ts" x="536" y="221" text-anchor="middle" dominant-baseline="central">cloudflared on OPNsense</text>
+  <text class="ts" x="536" y="237" text-anchor="middle" dominant-baseline="central">Tunnel: Achahib-ZEROTRUST</text>
+</g>
+
+<path d="M230,203 L252,203" fill="none" stroke="#854F0B" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M427,203 L449,203" fill="none" stroke="#854F0B" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+<!-- Azure AD inside CF network -->
+<g class="c-blue">
+  <rect x="55" y="278" width="175" height="90" rx="10" stroke-width="0.5"/>
+  <text class="th" x="142" y="298" text-anchor="middle" dominant-baseline="central">Microsoft Entra ID</text>
+  <text class="ts" x="142" y="315" text-anchor="middle" dominant-baseline="central">Azure AD · Identity Provider</text>
+  <text class="ts" x="142" y="331" text-anchor="middle" dominant-baseline="central">achahib.com · 18 users</text>
+  <text class="ts" x="142" y="347" text-anchor="middle" dominant-baseline="central">Synced from on-prem AD</text>
+</g>
+
+<path d="M142,258 L142,278" fill="none" stroke="#185FA5" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+<!-- Tunnel out of CF box -->
+<path d="M536,258 L536,388" fill="none" stroke="#854F0B" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<!-- OPNsense -->
+<g class="c-red">
+  <rect x="380" y="388" width="310" height="75" rx="10" stroke-width="0.5"/>
+  <text class="th" x="535" y="410" text-anchor="middle" dominant-baseline="central">OPNsense + Zenarmor</text>
+  <text class="ts" x="535" y="428" text-anchor="middle" dominant-baseline="central">Security gateway · Traffic inspection</text>
+  <text class="ts" x="535" y="445" text-anchor="middle" dominant-baseline="central">Internal traffic control · IDS/IPS</text>
+</g>
+
+<path d="M535,463 L535,503" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+
+<!-- Internal apps -->
+<g class="c-teal">
+  <rect x="380" y="503" width="148" height="65" rx="10" stroke-width="0.5"/>
+  <text class="th" x="454" y="523" text-anchor="middle" dominant-baseline="central">Nextcloud</text>
+  <text class="ts" x="454" y="540" text-anchor="middle" dominant-baseline="central">nextcloud-achahib</text>
+  <text class="ts" x="454" y="556" text-anchor="middle" dominant-baseline="central">.achahib.com</text>
+</g>
+
+<g class="c-teal">
+  <rect x="542" y="503" width="148" height="65" rx="10" stroke-width="0.5"/>
+  <text class="th" x="616" y="523" text-anchor="middle" dominant-baseline="central">Server Admin</text>
+  <text class="ts" x="616" y="540" text-anchor="middle" dominant-baseline="central">server-admin</text>
+  <text class="ts" x="616" y="556" text-anchor="middle" dominant-baseline="central">.achahib.com</text>
+</g>
+
+<!-- On-prem AD -->
+<g class="c-blue">
+  <rect x="30" y="418" width="200" height="65" rx="10" stroke-width="0.5"/>
+  <text class="th" x="130" y="438" text-anchor="middle" dominant-baseline="central">Active Directory</text>
+  <text class="ts" x="130" y="455" text-anchor="middle" dominant-baseline="central">On-premises ADDC</text>
+  <text class="ts" x="130" y="471" text-anchor="middle" dominant-baseline="central">Windows Server · GPO · DNS</text>
+</g>
+
+<path d="M130,388 L130,418" fill="none" stroke="#378ADD" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+<path d="M55,323 L20,323 L20,450 L30,450" fill="none" stroke="#378ADD" stroke-width="1" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+
+<!-- Deny scenario -->
+<g class="c-red">
+  <rect x="30" y="540" width="310" height="100" rx="10" stroke-width="0.5"/>
+  <text class="th" x="185" y="560" text-anchor="middle" dominant-baseline="central">Access denied — no WARP</text>
+  <text class="ts" x="185" y="578" text-anchor="middle" dominant-baseline="central">URL known but blocked before</text>
+  <text class="ts" x="185" y="594" text-anchor="middle" dominant-baseline="central">reaching the application</text>
+  <text class="ts" x="185" y="612" text-anchor="middle" dominant-baseline="central">Identity alone is not enough</text>
+  <text class="ts" x="185" y="628" text-anchor="middle" dominant-baseline="central">Device must be verified + compliant</text>
+</g>
+
+<!-- Access flow -->
+<g class="c-teal">
+  <rect x="30" y="660" width="620" height="175" rx="12" stroke-width="0.5"/>
+  <text class="th" x="340" y="680" text-anchor="middle" dominant-baseline="central">Access flow — every request</text>
+</g>
+
+<g class="c-gray">
+  <rect x="50" y="698" width="96" height="50" rx="8" stroke-width="0.5"/>
+  <text class="th" x="98" y="717" text-anchor="middle" dominant-baseline="central">WARP</text>
+  <text class="ts" x="98" y="734" text-anchor="middle" dominant-baseline="central">connected?</text>
+</g>
+<g class="c-gray">
+  <rect x="172" y="698" width="96" height="50" rx="8" stroke-width="0.5"/>
+  <text class="th" x="220" y="717" text-anchor="middle" dominant-baseline="central">Azure AD</text>
+  <text class="ts" x="220" y="734" text-anchor="middle" dominant-baseline="central">auth passes?</text>
+</g>
+<g class="c-gray">
+  <rect x="294" y="698" width="96" height="50" rx="8" stroke-width="0.5"/>
+  <text class="th" x="342" y="717" text-anchor="middle" dominant-baseline="central">Policy</text>
+  <text class="ts" x="342" y="734" text-anchor="middle" dominant-baseline="central">conditions met?</text>
+</g>
+<g class="c-gray">
+  <rect x="416" y="698" width="96" height="50" rx="8" stroke-width="0.5"/>
+  <text class="th" x="464" y="717" text-anchor="middle" dominant-baseline="central">Device</text>
+  <text class="ts" x="464" y="734" text-anchor="middle" dominant-baseline="central">posture OK?</text>
+</g>
+<g class="c-teal">
+  <rect x="538" y="698" width="96" height="50" rx="8" stroke-width="0.5"/>
+  <text class="th" x="586" y="717" text-anchor="middle" dominant-baseline="central">Access</text>
+  <text class="ts" x="586" y="734" text-anchor="middle" dominant-baseline="central">granted</text>
+</g>
+
+<path d="M146,723 L172,723" fill="none" stroke="#888780" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M268,723 L294,723" fill="none" stroke="#888780" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M390,723 L416,723" fill="none" stroke="#888780" stroke-width="1.2" marker-end="url(#arrow)"/>
+<path d="M512,723 L538,723" fill="none" stroke="#888780" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+<path d="M98,748 L98,760" fill="none" stroke="#A32D2D" stroke-width="1" marker-end="url(#arrow)"/>
+<path d="M220,748 L220,760" fill="none" stroke="#A32D2D" stroke-width="1" marker-end="url(#arrow)"/>
+<path d="M342,748 L342,760" fill="none" stroke="#A32D2D" stroke-width="1" marker-end="url(#arrow)"/>
+<path d="M464,748 L464,760" fill="none" stroke="#A32D2D" stroke-width="1" marker-end="url(#arrow)"/>
+
+<text class="ts" x="98" y="770" text-anchor="middle" style="fill:#A32D2D">No → block</text>
+<text class="ts" x="220" y="770" text-anchor="middle" style="fill:#A32D2D">No → block</text>
+<text class="ts" x="342" y="770" text-anchor="middle" style="fill:#A32D2D">No → block</text>
+<text class="ts" x="464" y="770" text-anchor="middle" style="fill:#A32D2D">No → block</text>
+
+<!-- Legend -->
+<path d="M32,830 L70,830" fill="none" stroke="#888780" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="ts" x="76" y="830" dominant-baseline="central" style="fill:#444441">Verified traffic</text>
+<path d="M210,830 L248,830" fill="none" stroke="#378ADD" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow)"/>
+<text class="ts" x="254" y="830" dominant-baseline="central" style="fill:#444441">Identity sync</text>
+<path d="M380,830 L418,830" fill="none" stroke="#854F0B" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text class="ts" x="424" y="830" dominant-baseline="central" style="fill:#444441">Zero Trust tunnel</text>
+</svg>
