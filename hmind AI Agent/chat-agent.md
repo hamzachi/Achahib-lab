@@ -26,7 +26,7 @@ The Chat Agent is an AI assistant purpose-built for IT and security professional
 
 <div align="center">
 
-![Chat Agent Architecture](../chat_agent_architecture.svg)
+![Chat Agent Architecture](../Architecture/chat_agent_architecture.svg)
 
 </div>
 
