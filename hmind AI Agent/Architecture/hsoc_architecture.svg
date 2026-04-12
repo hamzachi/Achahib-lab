@@ -1,0 +1,57 @@
+<svg width="100%" viewBox="0 0 680 640" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>HMIND HSOC Architecture</title>
+<desc>HSOC: Wazuh/Zabbix/OpenVAS agents, normalize, ingest to FastAPI, SQLite, dashboard and AI explain</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <style>text { font-family: ui-sans-serif, system-ui, sans-serif; }</style>
+</defs>
+<rect x="20" y="20" width="185" height="80" rx="10" stroke-width="0.5" fill="#791F1F" stroke="#F09595"/>
+<text x="112" y="43" text-anchor="middle" dominant-baseline="central" fill="#F7C1C1" font-size="14" font-weight="500">Wazuh</text>
+<text x="112" y="61" text-anchor="middle" dominant-baseline="central" fill="#F09595" font-size="12">SIEM · EDR · IDS</text>
+<text x="112" y="78" text-anchor="middle" dominant-baseline="central" fill="#F09595" font-size="12">OpenSearch API :9200</text>
+<rect x="247" y="20" width="185" height="80" rx="10" stroke-width="0.5" fill="#791F1F" stroke="#F09595"/>
+<text x="340" y="43" text-anchor="middle" dominant-baseline="central" fill="#F7C1C1" font-size="14" font-weight="500">Zabbix</text>
+<text x="340" y="61" text-anchor="middle" dominant-baseline="central" fill="#F09595" font-size="12">Infrastructure monitor</text>
+<text x="340" y="78" text-anchor="middle" dominant-baseline="central" fill="#F09595" font-size="12">JSON-RPC API</text>
+<rect x="474" y="20" width="185" height="80" rx="10" stroke-width="0.5" fill="#791F1F" stroke="#F09595"/>
+<text x="567" y="43" text-anchor="middle" dominant-baseline="central" fill="#F7C1C1" font-size="14" font-weight="500">OpenVAS</text>
+<text x="567" y="61" text-anchor="middle" dominant-baseline="central" fill="#F09595" font-size="12">Vulnerability scanner</text>
+<text x="567" y="78" text-anchor="middle" dominant-baseline="central" fill="#F09595" font-size="12">GMP · Unix socket</text>
+<path d="M112,100 L112,135 L290,135 L290,165" fill="none" stroke="rgba(240,149,149,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M340,100 L340,165" fill="none" stroke="rgba(240,149,149,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M567,100 L567,135 L390,135 L390,165" fill="none" stroke="rgba(240,149,149,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="100" y="165" width="480" height="90" rx="10" stroke-width="0.5" fill="#412402" stroke="#BA7517"/>
+<text x="340" y="187" text-anchor="middle" dominant-baseline="central" fill="#FAC775" font-size="14" font-weight="500">hsoc_agent.py — runs every 5 minutes</text>
+<text x="340" y="207" text-anchor="middle" dominant-baseline="central" fill="#BA7517" font-size="12">1. Pull from each API  2. Normalize severity (low/medium/high/critical)</text>
+<text x="340" y="225" text-anchor="middle" dominant-baseline="central" fill="#BA7517" font-size="12">3. Deduplicate via .hsoc_checkpoint.json  4. POST /api/hsoc/ingest</text>
+<text x="340" y="243" text-anchor="middle" dominant-baseline="central" fill="#BA7517" font-size="12">Installed on each security server · runs independently</text>
+<path d="M340,255 L340,290" fill="none" stroke="rgba(186,117,23,0.6)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="348" y="274" dominant-baseline="central" fill="#5F5E5A" font-size="11">POST /api/hsoc/ingest</text>
+<rect x="100" y="290" width="480" height="60" rx="10" stroke-width="0.5" fill="#085041" stroke="#5DCAA5"/>
+<text x="340" y="312" text-anchor="middle" dominant-baseline="central" fill="#9FE1CB" font-size="14" font-weight="500">FastAPI Backend — /api/hsoc/ingest</text>
+<text x="340" y="331" text-anchor="middle" dominant-baseline="central" fill="#5DCAA5" font-size="12">Validate · db.flush() · UNIQUE constraint · commit to SQLite</text>
+<path d="M340,350 L340,385" fill="none" stroke="rgba(93,202,165,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="100" y="385" width="480" height="70" rx="10" stroke-width="0.5" fill="#633806" stroke="#EF9F27"/>
+<text x="340" y="407" text-anchor="middle" dominant-baseline="central" fill="#FAC775" font-size="14" font-weight="500">SQLite Database</text>
+<text x="200" y="430" text-anchor="middle" dominant-baseline="central" fill="#EF9F27" font-size="12">hsoc_alerts</text>
+<text x="340" y="430" text-anchor="middle" dominant-baseline="central" fill="#EF9F27" font-size="12">hsoc_vulnerabilities</text>
+<text x="490" y="430" text-anchor="middle" dominant-baseline="central" fill="#EF9F27" font-size="12">hsoc_hosts · agent_servers</text>
+<path d="M240,455 L240,490 L170,490 L170,520" fill="none" stroke="rgba(239,159,39,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<path d="M440,455 L440,490 L510,490 L510,520" fill="none" stroke="rgba(239,159,39,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="20" y="520" width="295" height="80" rx="10" stroke-width="0.5" fill="#3C3489" stroke="#AFA9EC"/>
+<text x="167" y="543" text-anchor="middle" dominant-baseline="central" fill="#CECBF6" font-size="14" font-weight="500">HSOC Dashboard</text>
+<text x="167" y="561" text-anchor="middle" dominant-baseline="central" fill="#AFA9EC" font-size="12">Alerts · Vulns · Hosts · Servers panels</text>
+<text x="167" y="578" text-anchor="middle" dominant-baseline="central" fill="#AFA9EC" font-size="12">Red/green status dots · Click to drill down</text>
+<rect x="365" y="520" width="295" height="80" rx="10" stroke-width="0.5" fill="#26215C" stroke="#7F77DD"/>
+<text x="512" y="543" text-anchor="middle" dominant-baseline="central" fill="#CECBF6" font-size="14" font-weight="500">AI Explanation Engine</text>
+<text x="512" y="561" text-anchor="middle" dominant-baseline="central" fill="#7F77DD" font-size="12">Click Explain → Groq generates analysis</text>
+<text x="512" y="578" text-anchor="middle" dominant-baseline="central" fill="#7F77DD" font-size="12">Cached in ai_analysis · shared with Chat</text>
+<path d="M115,622 L148,622" fill="none" stroke="rgba(240,149,149,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="153" y="622" dominant-baseline="central" fill="#888780" font-size="11">agent pull</text>
+<path d="M280,622 L313,622" fill="none" stroke="rgba(93,202,165,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="318" y="622" dominant-baseline="central" fill="#888780" font-size="11">ingest to DB</text>
+<path d="M440,622 L473,622" fill="none" stroke="rgba(239,159,39,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="478" y="622" dominant-baseline="central" fill="#888780" font-size="11">DB to UI / AI</text>
+</svg>

@@ -1,0 +1,51 @@
+<svg width="100%" viewBox="0 0 680 620" role="img" xmlns="http://www.w3.org/2000/svg">
+<title>HMIND Chat Agent Architecture</title>
+<desc>Chat Agent: 3-layer routing, HSOC DB context, Groq fallback chain, SQLite storage</desc>
+<defs>
+  <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+    <path d="M2 1L8 5L2 9" fill="none" stroke="context-stroke" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </marker>
+  <style>text { font-family: ui-sans-serif, system-ui, sans-serif; }</style>
+</defs>
+<rect x="240" y="15" width="200" height="50" rx="10" stroke-width="0.5" fill="#444441" stroke="#B4B2A9"/>
+<text x="340" y="34" text-anchor="middle" dominant-baseline="central" fill="#D3D1C7" font-size="14" font-weight="500">User Message</text>
+<text x="340" y="51" text-anchor="middle" dominant-baseline="central" fill="#B4B2A9" font-size="12">Chat UI · /chat · POST /api/chat/message</text>
+<path d="M340,65 L340,100" fill="none" stroke="rgba(180,178,169,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="100" y="100" width="480" height="60" rx="10" stroke-width="0.5" fill="#2C2C2A" stroke="#888780"/>
+<text x="340" y="122" text-anchor="middle" dominant-baseline="central" fill="#D3D1C7" font-size="14" font-weight="500">Layer 1 — Pattern Match</text>
+<text x="340" y="141" text-anchor="middle" dominant-baseline="central" fill="#888780" font-size="12">Greetings · simple ack · short phrases → instant reply · 0ms · no API call</text>
+<path d="M340,160 L340,195" fill="none" stroke="rgba(180,178,169,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="348" y="180" dominant-baseline="central" fill="#5F5E5A" font-size="11">not matched</text>
+<rect x="100" y="195" width="480" height="65" rx="10" stroke-width="0.5" fill="#412402" stroke="#BA7517"/>
+<text x="340" y="217" text-anchor="middle" dominant-baseline="central" fill="#FAC775" font-size="14" font-weight="500">Layer 2 — HSOC DB Query</text>
+<text x="340" y="236" text-anchor="middle" dominant-baseline="central" fill="#BA7517" font-size="12">Keywords: alerts · hosts · vulns · critical · down</text>
+<text x="340" y="252" text-anchor="middle" dominant-baseline="central" fill="#BA7517" font-size="12">SELECT directly from SQLite → structured answer · instant · always works</text>
+<path d="M340,260 L340,295" fill="none" stroke="rgba(180,178,169,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="348" y="280" dominant-baseline="central" fill="#5F5E5A" font-size="11">not a data query</text>
+<rect x="100" y="295" width="480" height="65" rx="10" stroke-width="0.5" fill="#085041" stroke="#5DCAA5"/>
+<text x="340" y="317" text-anchor="middle" dominant-baseline="central" fill="#9FE1CB" font-size="14" font-weight="500">Layer 3 — AI with HSOC Context</text>
+<text x="340" y="336" text-anchor="middle" dominant-baseline="central" fill="#5DCAA5" font-size="12">Builds context: critical alerts + top CVEs + hosts down from DB</text>
+<text x="340" y="352" text-anchor="middle" dominant-baseline="central" fill="#5DCAA5" font-size="12">CVE analysis · config writing · hardening · incident response · 2-3 sec</text>
+<path d="M340,360 L340,395" fill="none" stroke="rgba(93,202,165,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="100" y="395" width="480" height="90" rx="10" stroke-width="0.5" fill="#26215C" stroke="#7F77DD"/>
+<text x="340" y="415" text-anchor="middle" dominant-baseline="central" fill="#CECBF6" font-size="14" font-weight="500">Groq API — 6-Model Fallback Chain</text>
+<rect x="115" y="428" width="115" height="26" rx="5" fill="#3C3489" stroke="#534AB7" stroke-width="0.5"/>
+<text x="172" y="441" text-anchor="middle" dominant-baseline="central" fill="#AFA9EC" font-size="11">llama-3.1-8b-instant</text>
+<rect x="240" y="428" width="105" height="26" rx="5" fill="#3C3489" stroke="#534AB7" stroke-width="0.5"/>
+<text x="292" y="441" text-anchor="middle" dominant-baseline="central" fill="#AFA9EC" font-size="11">gemma2-9b-it</text>
+<rect x="355" y="428" width="110" height="26" rx="5" fill="#3C3489" stroke="#534AB7" stroke-width="0.5"/>
+<text x="410" y="441" text-anchor="middle" dominant-baseline="central" fill="#AFA9EC" font-size="11">llama3-8b-8192</text>
+<rect x="475" y="428" width="90" height="26" rx="5" fill="#3C3489" stroke="#534AB7" stroke-width="0.5"/>
+<text x="520" y="441" text-anchor="middle" dominant-baseline="central" fill="#AFA9EC" font-size="11">llama-3.2-3b</text>
+<text x="340" y="470" text-anchor="middle" dominant-baseline="central" fill="#534AB7" font-size="11">Auto-fallback on rate limit · model_used logged in messages table</text>
+<path d="M340,485 L340,520" fill="none" stroke="rgba(127,119,221,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<rect x="100" y="520" width="480" height="60" rx="10" stroke-width="0.5" fill="#633806" stroke="#EF9F27"/>
+<text x="340" y="542" text-anchor="middle" dominant-baseline="central" fill="#FAC775" font-size="14" font-weight="500">SQLite — chat_sessions · messages · ai_cache</text>
+<text x="340" y="561" text-anchor="middle" dominant-baseline="central" fill="#EF9F27" font-size="12">Stores: role · content · model_used · layer_used · hsoc_context_snapshot</text>
+<path d="M100,385 L60,385 L60,227 L100,227" fill="none" stroke="rgba(239,159,39,0.45)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<text x="26" y="310" dominant-baseline="central" fill="#5F5E5A" font-size="11" transform="rotate(-90,26,310)">reads HSOC live data</text>
+<path d="M115,600 L148,600" fill="none" stroke="rgba(180,178,169,0.5)" stroke-width="1.5" marker-end="url(#arrow)"/>
+<text x="153" y="600" dominant-baseline="central" fill="#888780" font-size="11">message flow</text>
+<path d="M310,600 L343,600" fill="none" stroke="rgba(239,159,39,0.45)" stroke-width="1.2" stroke-dasharray="5,3" marker-end="url(#arrow)"/>
+<text x="348" y="600" dominant-baseline="central" fill="#888780" font-size="11">HSOC DB read</text>
+</svg>
