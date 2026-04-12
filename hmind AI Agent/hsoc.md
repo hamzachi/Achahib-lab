@@ -26,7 +26,7 @@ HSOC is the live security monitoring module of HMIND. It aggregates data from **
 
 <div align="center">
 
-![HSOC Architecture](../Architecture/hsoc_architecture.svg)
+![HSOC Architecture](hmind%20AI%20Agent/Architecture/hsoc_architecture.svg)
 
 </div>
 
