@@ -360,6 +360,6 @@ async def explain_with_groq(prompt: str, cache_key: str) -> str:
 
 <div align="center">
 
-*[← Back to HMIND Platform](../README.md) · [Chat Agent Documentation →](./chat-agent.md)*
+*[← Back to Achahib-Lab Platform](../README.md) · [Chat Agent Documentation →](./chat-agent.md)*
 
 </div>
