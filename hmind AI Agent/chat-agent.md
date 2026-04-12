@@ -26,7 +26,7 @@ The Chat Agent is an AI assistant purpose-built for IT and security professional
 
 <div align="center">
 
-![HSOC Architecture](https://raw.githubusercontent.com/hamzachi/HMIND/main/hmind%20AI%20Agent/Architecture/hsoc_architecture.svg)
+![Chat Agent Architecture](https://raw.githubusercontent.com/hamzachi/Achahib-lab/main/hmind%20AI%20Agent/Architecture/chat_agent_architecture.svg)
 
 </div>
 
