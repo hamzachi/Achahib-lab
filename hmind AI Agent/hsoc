@@ -1,0 +1,336 @@
+# HSOC — Security Operations Center
+
+> Part of the [HMIND Platform](../README.md)
+
+---
+
+## Overview
+
+HSOC is the live security monitoring module of HMIND. It aggregates data from three independent security systems (Wazuh, Zabbix, OpenVAS), normalizes everything into a unified schema, and presents it in a single dashboard with AI-driven analysis per alert, vulnerability, and host.
+
+---
+
+## Data Collection Architecture
+
+<div align="center">
+
+![HSOC Architecture](../hsoc_architecture.svg)
+
+</div>
+
+---
+
+## hsoc_agent.py — How It Works
+
+### Wazuh — OpenSearch API
+
+```python
+def collect_wazuh(config):
+    url = f"https://{config['wazuh_host']}:9200/wazuh-alerts-*/_search"
+    query = {
+        "query": {
+            "range": {
+                "@timestamp": {
+                    "gte": last_checkpoint,
+                    "lte": "now"
+                }
+            }
+        },
+        "sort": [{"@timestamp": "desc"}],
+        "size": 100
+    }
+    response = requests.post(url, json=query, auth=HTTPBasicAuth(...), verify=False)
+    hits = response.json()["hits"]["hits"]
+
+    alerts = []
+    for hit in hits:
+        src = hit["_source"]
+        alerts.append({
+            "source": "wazuh",
+            "severity": map_severity(src.get("rule", {}).get("level", 0)),
+            "title": src.get("rule", {}).get("description", ""),
+            "agent": src.get("agent", {}).get("name", ""),
+            "timestamp": src.get("@timestamp"),
+            "raw": json.dumps(src)
+        })
+    return alerts
+```
+
+### Zabbix — JSON-RPC API
+
+```python
+def collect_zabbix(config):
+    token = zabbix_rpc("user.login", {
+        "user": config["zabbix_user"],
+        "password": config["zabbix_pass"]
+    })
+    problems = zabbix_rpc("problem.get", {
+        "output": "extend",
+        "selectHosts": ["host"],
+        "severities": [2, 3, 4, 5],
+        "time_from": last_checkpoint
+    })
+    alerts = []
+    for p in problems:
+        alerts.append({
+            "source": "zabbix",
+            "severity": map_zabbix_severity(p["severity"]),
+            "title": p["name"],
+            "agent": p["hosts"][0]["host"] if p["hosts"] else "unknown",
+            "timestamp": datetime.fromtimestamp(int(p["clock"])).isoformat(),
+            "raw": json.dumps(p)
+        })
+    return alerts
+```
+
+### OpenVAS — GMP Unix Socket
+
+```python
+def collect_openvas(config):
+    with gvm.connections.UnixSocketConnection(
+        path="/run/gvmd/gvmd.sock"
+    ) as conn:
+        gmp = Gmp(conn, transform=EtreeCheckCommandTransform())
+        gmp.authenticate(config["openvas_user"], config["openvas_pass"])
+        results = gmp.get_results(filter_string="rows=100 sort-reverse=severity")
+
+        vulns = []
+        for result in results.findall("result"):
+            cvss = float(result.findtext("severity", "0"))
+            vulns.append({
+                "cve":        result.findtext("nvt/refs/ref[@type='cve']/@id", ""),
+                "name":       result.findtext("name", ""),
+                "cvss_score": cvss,
+                "severity":   map_cvss_to_severity(cvss),
+                "host":       result.findtext("host/hostname", ""),
+                "solution":   result.findtext("nvt/solution", ""),
+            })
+    return vulns
+```
+
+### Checkpoint Tracking — No Duplicate Data
+
+```json
+// .hsoc_checkpoint.json — updated after every successful push
+{
+  "wazuh_last_timestamp": "2025-01-15T14:32:00Z",
+  "zabbix_last_clock": 1736951520,
+  "openvas_last_result_id": "a3f9c2b1-..."
+}
+```
+
+---
+
+## Severity Normalization
+
+All three sources use different severity scales. The agent normalizes everything before pushing to HMIND:
+
+| HMIND Level | Wazuh Rule Level | Zabbix Severity | OpenVAS CVSS |
+|---|---|---|---|
+| `low` | 0–6 | Information / Warning | 0.1–3.9 |
+| `medium` | 7–10 | Average | 4.0–6.9 |
+| `high` | 11–13 | High | 7.0–8.9 |
+| `critical` | 14–15 | Disaster | 9.0–10.0 |
+
+---
+
+## Database Schema
+
+```sql
+CREATE TABLE hsoc_alerts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    source      TEXT NOT NULL,          -- "wazuh" | "zabbix"
+    severity    TEXT NOT NULL,          -- "low" | "medium" | "high" | "critical"
+    title       TEXT NOT NULL,
+    agent       TEXT,
+    timestamp   DATETIME NOT NULL,
+    raw         TEXT,                   -- full original JSON from source
+    ai_analysis TEXT,                   -- cached AI explanation
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(source, title, agent, timestamp)
+);
+
+CREATE TABLE hsoc_vulnerabilities (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    cve         TEXT,
+    name        TEXT NOT NULL,
+    cvss_score  REAL,
+    severity    TEXT NOT NULL,
+    host        TEXT,
+    solution    TEXT,
+    raw         TEXT,
+    ai_analysis TEXT,
+    created_at  DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(cve, host)
+);
+
+CREATE TABLE hsoc_hosts (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    hostname    TEXT NOT NULL UNIQUE,
+    ip_address  TEXT,
+    status      TEXT DEFAULT "unknown", -- "up" | "down" | "unknown"
+    source      TEXT,
+    last_seen   DATETIME,
+    os          TEXT,
+    updated_at  DATETIME
+);
+
+CREATE TABLE hsoc_agent_servers (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    name            TEXT NOT NULL UNIQUE,   -- "wazuh" | "zabbix" | "openvas"
+    status          TEXT,                   -- "online" | "offline"
+    last_contact    DATETIME,
+    alerts_received INTEGER DEFAULT 0,
+    error_message   TEXT
+);
+```
+
+**UNIQUE constraint fix:** Early versions crashed when the agent pushed duplicate records during overlapping runs. Fixed by calling `db.flush()` before `db.commit()` inside the ingest loop — this forces SQLite to raise the `IntegrityError` per-record instead of per-batch, so one duplicate does not roll back the entire ingestion.
+
+---
+
+## AI Explanation Flow
+
+```
+Analyst clicks "Explain" on an alert
+              │
+              ▼
+POST /api/hsoc/explain
+{ "type": "alert", "id": 142 }
+              │
+              ▼
+Backend fetches:
+  - alert raw JSON
+  - last 5 events from same host
+              │
+              ▼
+Prompt built:
+  "You are a security analyst. Explain this alert.
+   What triggered it, what the attacker may have done,
+   recommended response.
+   Alert: {raw}
+   Host history: {last_5_events}"
+              │
+              ▼
+Groq API → response stored in hsoc_alerts.ai_analysis
+              │
+              ▼
+Returned to dashboard + cached for future views
+```
+
+---
+
+## Dashboard Panels
+
+| Panel | Data Source | Key Query |
+|---|---|---|
+| Overview | All tables | COUNT grouped by severity |
+| Wazuh Alerts | `hsoc_alerts WHERE source='wazuh'` | Sorted by severity → timestamp |
+| Zabbix Alerts | `hsoc_alerts WHERE source='zabbix'` | Sorted by severity → timestamp |
+| Vulnerabilities | `hsoc_vulnerabilities` | Sorted by cvss_score DESC |
+| Hosts | `hsoc_hosts` | All hosts, status dot green/red |
+| Servers | `hsoc_agent_servers` | Agent online/offline per source |
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/hsoc/ingest` | Receive push from hsoc_agent.py |
+| `GET` | `/api/hsoc/alerts` | List alerts with filtering |
+| `GET` | `/api/hsoc/vulnerabilities` | List CVEs sorted by CVSS |
+| `GET` | `/api/hsoc/hosts` | All hosts with status |
+| `GET` | `/api/hsoc/servers` | Agent connectivity status |
+| `POST` | `/api/hsoc/explain` | AI explanation for alert/vuln/host |
+| `GET` | `/api/hsoc/summary` | Overview counts |
+
+---
+
+## Planned Enhancements
+
+- **Auto-healing** — critical alert fires → HMIND triggers playbook (block IP, restart service, isolate host via SSH/API)
+- **Correlation engine** — same IP triggers Wazuh + Zabbix simultaneously → unified high-priority incident
+- **Threat intel enrichment** — enrich IPs and CVEs with AbuseIPDB / MISP on ingest
+- **Network page integration** — map alerts to switch ports and VLANs for faster triage
+- **Email / Telegram alerting** — push critical alerts without requiring dashboard access
+
+---
+
+## How HSOC and Chat Agent Communicate
+
+The HSOC module and the Chat Agent are not two separate applications. They are two interfaces to the same backend and the same database. There is no API call between them — they share data through SQLite directly.
+
+### Shared Database — The Bridge
+
+```
+HSOC Module                         Chat Agent
+    │                                   │
+    │   WRITE hsoc_alerts               │   READ hsoc_alerts
+    │   WRITE hsoc_vulnerabilities      │   READ hsoc_vulnerabilities
+    │   WRITE hsoc_hosts                │   READ hsoc_hosts
+    │   WRITE hsoc_agent_servers        │   READ for context building
+    │                                   │
+    └──────────────┬────────────────────┘
+                   │
+            SQLite Database
+            (single file, single schema)
+```
+
+### Data Flow — End to End
+
+```
+Step 1 — Agent collects data (every 5 min)
+hsoc_agent.py pulls Wazuh + Zabbix + OpenVAS
+POST /api/hsoc/ingest → written to SQLite
+
+Step 2 — HSOC dashboard reads it
+GET /api/hsoc/alerts → panels refresh
+Analyst sees new critical alert in red
+
+Step 3 — Chat Agent reads the same data
+User asks: "what are the critical alerts right now?"
+Layer 2 queries: SELECT * FROM hsoc_alerts
+                 WHERE severity = 'critical'
+                 ORDER BY timestamp DESC
+Returns same alerts the HSOC panel is showing —
+same source, same DB, zero duplication
+
+Step 4 — AI explanation is shared
+Analyst clicks "Explain" on HSOC panel
+→ Groq generates explanation
+→ stored in hsoc_alerts.ai_analysis
+
+Later, user asks chat about the same alert
+→ chat reads cached ai_analysis from DB
+→ no second API call needed
+```
+
+### Shared AI Function
+
+Both modules call the same internal function. The result is cached in the database and available to both:
+
+```python
+# ai.py — used by both chat.py and hsoc.py
+
+async def explain_with_groq(prompt: str, cache_key: str) -> str:
+    cached = db.query(AICache).filter_by(key=cache_key).first()
+    if cached:
+        return cached.response          # instant — no API call
+
+    response = await call_groq_with_fallback(prompt)
+
+    db.add(AICache(key=cache_key, response=response))
+    db.commit()
+    return response
+```
+
+### Summary
+
+| What | How |
+|---|---|
+| HSOC writes data | `hsoc_agent.py` → `POST /api/hsoc/ingest` → SQLite |
+| Chat reads data | Direct DB query in Layer 2 and context builder |
+| Both use AI | Same `explain_with_groq()` — shared cache in DB |
+| No duplication | One database, one schema, two interfaces |
+| Audit trail | Every AI call logged in `messages` table regardless of which module triggered it |
