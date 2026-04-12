@@ -1,0 +1,269 @@
+# IT Chat Agent — Technical Deep-Dive
+
+> Part of the [HMIND Platform](../README.md)
+
+---
+
+## Overview
+
+The Chat Agent is an AI assistant purpose-built for IT and security professionals. It has direct read access to live infrastructure data (alerts, vulnerabilities, host status) and a layered response architecture designed to minimize API cost while maximizing response accuracy.
+
+---
+
+## 3-Layer Response Architecture
+
+Every message passes through three decision layers in order. The system only escalates to the next layer if the current one cannot handle the request.
+
+<div align="center">
+
+![Chat Agent Architecture](../chat_agent_architecture.svg)
+
+</div>
+
+**Why this matters:** A question like *"are you there?"* costs zero API calls. A question like *"how many critical alerts?"* costs zero API calls. Only genuine technical questions hit Groq — keeping cost low and response times consistent even under rate limits.
+
+---
+
+## HSOC Context Injection
+
+When a message reaches Layer 3, the backend builds a structured context object from the live database before calling Groq:
+
+```python
+# Simplified — chat.py
+
+def build_hsoc_context(db: Session) -> str:
+    alerts = db.query(HSOCAlert).filter(
+        HSOCAlert.severity.in_(["critical", "high"])
+    ).order_by(HSOCAlert.timestamp.desc()).limit(10).all()
+
+    vulns = db.query(HSOCVuln).order_by(
+        HSOCVuln.cvss_score.desc()
+    ).limit(5).all()
+
+    hosts_down = db.query(HSOCHost).filter(
+        HSOCHost.status == "down"
+    ).all()
+
+    context = f"""
+    Current infrastructure state:
+    - Critical/High alerts (last 10): {format_alerts(alerts)}
+    - Top CVEs by CVSS: {format_vulns(vulns)}
+    - Hosts currently down: {format_hosts(hosts_down)}
+    """
+    return context
+```
+
+The AI receives this context on every Layer 3 call — so it can answer *"what should I investigate first?"* with actual knowledge of what is happening in your environment right now.
+
+---
+
+## AI Model Fallback Chain
+
+Groq enforces rate limits per model. HMIND implements an automatic fallback so the chat never fails due to rate limiting:
+
+```
+llama-3.1-8b-instant   ← primary (fastest)
+      │ rate limited?
+      ▼
+gemma2-9b-it
+      │ rate limited?
+      ▼
+llama3-8b-8192
+      │ rate limited?
+      ▼
+llama-3.2-3b-preview
+      │ rate limited?
+      ▼
+llama-3.2-1b-preview
+      │ rate limited?
+      ▼
+gemma-7b-it            ← last resort
+```
+
+Each fallback attempt is logged with which model was used. The `model_used` field in the messages table records this for every response.
+
+---
+
+## Typewriter Animation
+
+The backend returns a complete response (non-streaming, to avoid Cloudflare SSE buffering issues). The frontend animates the reveal client-side:
+
+```javascript
+// chat.js — simplified
+
+async function typewriterRender(text, targetEl) {
+    const parsed = marked.parse(text);
+    let i = 0;
+    const chars = [...parsed];
+    targetEl.innerHTML = "";
+
+    return new Promise(resolve => {
+        const interval = setInterval(() => {
+            targetEl.innerHTML += chars[i];
+            i++;
+            if (i >= chars.length) {
+                clearInterval(interval);
+                Prism.highlightAllUnder(targetEl);
+                resolve();
+            }
+        }, 8);
+    });
+}
+```
+
+---
+
+## Database Schema
+
+```sql
+CREATE TABLE chat_sessions (
+    id          TEXT PRIMARY KEY,       -- UUID
+    created_at  DATETIME,
+    title       TEXT                    -- auto-generated from first message
+);
+
+CREATE TABLE messages (
+    id                      INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_id              TEXT REFERENCES chat_sessions(id),
+    role                    TEXT,       -- "user" | "assistant"
+    content                 TEXT,
+    model_used              TEXT,       -- which Groq model responded
+    layer_used              INTEGER,    -- 1, 2, or 3
+    timestamp               DATETIME,
+    hsoc_context_snapshot   TEXT        -- JSON snapshot of DB state at query time
+);
+```
+
+The `hsoc_context_snapshot` field stores exactly what infrastructure data the AI saw when generating its response — useful for auditing AI decisions after an incident.
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/api/chat/message` | Send message, receive AI response |
+| `GET` | `/api/chat/sessions` | List all sessions |
+| `GET` | `/api/chat/sessions/{id}` | Full message history for a session |
+| `DELETE` | `/api/chat/sessions/{id}` | Delete session and messages |
+
+```json
+POST /api/chat/message
+{
+  "session_id": "uuid",
+  "message": "explain CVE-2024-1234 and its impact on my servers"
+}
+
+Response:
+{
+  "response": "...",
+  "layer_used": 3,
+  "model_used": "llama-3.1-8b-instant",
+  "hsoc_context_used": true,
+  "response_time_ms": 2340
+}
+```
+
+---
+
+## Planned Enhancements
+
+- **RAG** — index internal runbooks and configs into a vector store so AI answers from your own knowledge base
+- **Command execution mode** — AI proposes fix commands, operator approves, HMIND executes via SSH with full logging
+- **Conversation memory** — persistent context across sessions for long investigations
+- **Network page integration** — ask the chat about switch ports, VLANs, and interface status in natural language
+
+---
+
+## How Chat Agent and HSOC Communicate
+
+The Chat Agent and HSOC are not two separate applications — they are two interfaces to the same backend and the same database. This section explains exactly how they share data.
+
+### Shared Database
+
+Both modules read and write to a single SQLite database. There is no API call between them — they communicate through the database directly.
+
+```
+Chat Agent                          HSOC Module
+    │                                   │
+    │   READ hsoc_alerts                │   WRITE hsoc_alerts
+    │   READ hsoc_vulnerabilities       │   WRITE hsoc_vulnerabilities
+    │   READ hsoc_hosts                 │   WRITE hsoc_hosts
+    │   WRITE messages                  │   READ messages (for audit)
+    │                                   │
+    └───────────────┬───────────────────┘
+                    │
+             SQLite Database
+             (single file, shared)
+```
+
+### Data Flow — Step by Step
+
+```
+1. hsoc_agent.py runs every 5 minutes
+         │
+         ▼
+2. Pulls from Wazuh + Zabbix + OpenVAS
+         │
+         ▼
+3. POST /api/hsoc/ingest → FastAPI writes to DB
+         │
+         ┌────────────────────────┐
+         ▼                        ▼
+4a. HSOC dashboard               4b. Chat Agent
+    reads new alerts                  reads same alerts
+    renders panels                    as context for AI
+    shows to analyst                  answers user questions
+```
+
+### Real Example
+
+```
+14:00 — hsoc_agent pushes 3 new critical Wazuh alerts to DB
+
+14:01 — HSOC dashboard refreshes → analyst sees 3 new alerts in red
+
+14:02 — Analyst opens Chat and asks:
+        "what are the critical alerts right now?"
+
+14:02 — Chat Layer 2 queries DB:
+        SELECT * FROM hsoc_alerts
+        WHERE severity = 'critical'
+        ORDER BY timestamp DESC LIMIT 10
+
+        Returns the same 3 alerts the HSOC panel is showing —
+        same data, same source, zero duplication
+```
+
+### Shared AI Pipeline
+
+When HSOC generates an AI explanation for an alert (analyst clicks "Explain"), it uses the exact same Groq function as the Chat Agent. The explanation is stored in `hsoc_alerts.ai_analysis` — so if the analyst later asks the chat about the same alert, the cached explanation is returned instantly without a second API call.
+
+```python
+# Both modules call the same function — ai.py
+
+async def explain_with_groq(prompt: str, db_cache_key: str) -> str:
+    # check cache first
+    cached = db.query(AICache).filter_by(key=db_cache_key).first()
+    if cached:
+        return cached.response
+
+    # call Groq with fallback chain
+    response = await call_groq_with_fallback(prompt)
+
+    # store in cache — available to both Chat and HSOC
+    db.add(AICache(key=db_cache_key, response=response))
+    db.commit()
+
+    return response
+```
+
+### Summary
+
+| What | How |
+|---|---|
+| HSOC writes alerts | `POST /api/hsoc/ingest` via hsoc_agent.py |
+| Chat reads alerts | Direct DB query inside Layer 2 / context builder |
+| Both use AI | Same `explain_with_groq()` function, shared cache |
+| No duplication | One DB, one schema, two interfaces |
+| Audit trail | Every AI interaction logged in `messages` table regardless of which module triggered it |
