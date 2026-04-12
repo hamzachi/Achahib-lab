@@ -16,7 +16,7 @@ Every message passes through three decision layers in order. The system only esc
 
 <div align="center">
 
-![Chat Agent Architecture](.../chat_agent_architecture.svg)
+![Chat Agent Architecture](hmind AI Agent/Architecture/chat_agent_architecture.svg)
 
 </div>
 
