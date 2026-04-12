@@ -301,6 +301,6 @@ async def explain_with_groq(prompt: str, cache_key: str) -> str:
 
 <div align="center">
 
-*[← Back to HMIND Platform](../README.md) · [HSOC Documentation →](./hsoc.md)*
+*[← Back to Achahib-Lab Platform](../README.md) · [HSOC Documentation →](./hsoc.md)*
 
 </div>
