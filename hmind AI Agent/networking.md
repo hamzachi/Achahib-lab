@@ -207,6 +207,6 @@ CREATE TABLE network_device_data (
 
 <div align="center">
 
-*[← Back to HMIND Platform](../README.md) · [HNTA — Traffic Analyzer →](./hnta.md)*
+*[← Back to Achahib-LAbs Platform](../README.md) · [HNTA — Traffic Analyzer →](./hnta.md)*
 
 </div>
