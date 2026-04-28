@@ -8,7 +8,7 @@
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=flat-square&logo=python&logoColor=white)](.)
 [![Status](https://img.shields.io/badge/Status-Active%20Development-orange?style=flat-square)](.)
 
-**Part of the [HMIND Platform](../README.md)**
+**Part of the [Achahib-LABs](../README.md)**
 
 </div>
 
