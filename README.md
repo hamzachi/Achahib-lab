@@ -31,22 +31,30 @@ Hi, I'm **Hamza** — an IT Engineer based in Morocco with **5+ years of experie
 
 </div>
 
-> **Legend:** Solid lines = physical connections · Orange dashed = Cloudflare Zero Trust tunnel · Blue dashed = Azure AD hybrid sync
+> **Public-facing logical diagram:** firewall, routing, cloud access, encrypted tunnels and service zones. Actual IP addresses, hostnames, ports, subnet IDs and management-plane details are deliberately omitted.
+
+**Secure remote-access path:** Remote OpenVPN client → public VPS endpoint → WireGuard tunnel → OPNsense → on-premises OpenVPN Access Server. The VPS provides an inbound relay; the home ISP's address is not the advertised VPN endpoint.
+
+**VPN user internet egress:** OpenVPN full tunnel → on-premises routing → WireGuard → VPS → Cloudflare WARP → Internet. Outbound websites see the Cloudflare WARP egress address rather than the VPS's original public address.
+
+**Routing separation:** A narrowly scoped policy-routing rule returns OpenVPN transport traffic via the VPS public network interface; ordinary permitted egress uses WARP. BGP exchanges designated lab routes over WireGuard. Cloudflare Tunnel / Access and the Ubuntu Mesh egress path are **separate** architectures.
+
+**Engineering case study:** [OpenVPN + WireGuard + Cloudflare WARP: asymmetric-routing resolution](network/secure-remote-access.md)
 
 ---
 
-## 📋 VLAN Table
+## 📋 Segmentation Overview
 
-| VLAN ID | Name | Purpose | Status |
-|---|---|---|---|
-| **1** | MGMT (Default) | All servers, management interfaces, infrastructure | ✅ Active |
-| **11** | WIFI | Wireless clients | ✅ Active |
-| **20** | LABs | Lab environments and testing machines | ✅ Active |
-| **44** | VOIP | Voice over IP devices and PBX | ✅ Active |
-| **50** | DMZ | Exposed services, public-facing servers | ✅ Active |
-| **98** | INT-LABs | Internal isolated lab networks | ✅ Active |
-| **100** | HOME | Home devices and personal endpoints | ✅ Active |
-| **101** | Test | Temporary testing and sandboxing | ✅ Active |
+| Zone | Purpose |
+|---|---|
+| Management | Administration and infrastructure services |
+| Wireless | Wireless endpoints |
+| Labs | Isolated engineering and test workloads |
+| Voice | IP telephony |
+| DMZ | Segregated published services |
+| Home / Test | Personal and transient testing workloads |
+
+> VLAN identifiers, subnet assignments and access-control details are intentionally withheld from this public repository.
 
 ---
 
@@ -68,7 +76,7 @@ achahib-lab/
 ├── 📁 vpn/
 │   ├── wireguard/            # WireGuard OPNsense client config
 │   ├── openvpn/              # OpenVPN server setup & auth
-│   └── double-tunnel/        # WireGuard → OpenVPN architecture docs
+│   └── double-tunnel/        # OpenVPN / WireGuard / WARP documentation
 ├── 📁 zero-trust/
 │   ├── cloudflare-warp/      # WARP client deployment & policies
 │   ├── ztna-apps/            # Application access policies (on-prem)
@@ -117,7 +125,7 @@ achahib-lab/
 | **Zenarmor** | NGFW Plugin | IDS/IPS, SNI inspection, app-layer control, TLS inspection |
 | **Cisco Router** | Distribution Layer | Inter-VLAN routing, ACLs, QoS, policy enforcement |
 | **Cisco Switch** | Layer 2 Core | VLAN trunking, port segmentation, 802.1X enforcement |
-| **PacketFence** | NAC / AAA | AD integration, RADIUS, wired 802.1X EAP-TLS; NOC-SURFACE validated on Catalyst 3750 |
+| **PacketFence** | NAC / AAA | AD integration, RADIUS, wired 802.1X EAP-TLS; lab access switch validated on Cisco Catalyst |
 
 ---
 
@@ -136,19 +144,25 @@ achahib-lab/
 
 **Cloudflare Internet egress:** Selected LAN traffic → Cisco VLAN gateway → OPNsense + Zenarmor → Ubuntu Mesh node (Achahib-FullTunnel) → Cloudflare Gateway → Internet. Routing policy determines which networks use this path; existing VPN and other egress paths remain separate.
 
-**Identity and domain services:** On-prem AD (`achahib.local`) synchronizes with Microsoft Entra ID. AD remains responsible for DNS, Kerberos and GPO; Cloudflare provides secure connectivity and access controls. Public source IP behavior depends on the selected egress mode.
+**Identity and domain services:** On-prem AD (`internal AD domain`) synchronizes with Microsoft Entra ID. AD remains responsible for DNS, Kerberos and GPO; Cloudflare provides secure connectivity and access controls. Public source IP behavior depends on the selected egress mode.
 
 ---
 
 ### 🔒 VPN Architecture
 
-| Component | Role | Key Features |
+| Component | Role | Key features |
 |---|---|---|
-| **WireGuard (OPNsense)** | Outbound VPN Client | Tunnels traffic from OPNsense to VPS gateway |
-| **VPS (WG Server)** | VPN Gateway | Acts as the WireGuard server and OpenVPN relay |
-| **OpenVPN** | Remote Access VPN | Full traffic redirection through WireGuard tunnel |
+| **OpenVPN Access Server** | On-prem remote-access server | Full-tunnel client profile, directory-backed authentication and MFA |
+| **OPNsense** | On-prem security gateway | Firewall rules, route selection, inter-zone access |
+| **WireGuard** | Site-to-cloud encrypted tunnel | VPS-to-home-lab transport |
+| **FRRouting / BGP** | Dynamic routing | Route exchange for designated lab networks |
+| **VPS** | Public entry point and routing gateway | OpenVPN UDP forwarding, carefully scoped return-path policy |
+| **Cloudflare WARP on VPS** | Internet egress | Outbound traffic exits through WARP |
+| **systemd** | Routing rule persistence | Ensures the dedicated OpenVPN return-path rule is installed at service startup |
 
-> 💡 **Double Tunnel:** `Client → OpenVPN → WireGuard → VPS → Internet` — OpenVPN traffic is wrapped inside WireGuard for layered encryption and fingerprint obfuscation.
+**Important:** The original issue was asymmetric routing: OpenVPN requests reached the on-premises server, but server replies returned through Cloudflare WARP instead of the VPS public interface. Source-port-specific policy routing fixed the return path without globally bypassing WARP.
+
+See the [sanitized implementation case study](network/secure-remote-access.md). This is a conceptual overview; sensitive commands and exact targeting details are intentionally excluded.
 
 ---
 
@@ -190,9 +204,9 @@ achahib-lab/
 
 - **[DNS over HTTPS Gateway]** — OPNsense + Cloudflare Gateway enforcing network-wide DoH with category-based DNS filtering
 - **[Zero Trust Remote Access]** — Cloudflare WARP + ZTNA replacing traditional VPN — on-prem apps accessible without port forwarding
-- **[Double VPN Architecture]** — WireGuard tunnel (OPNsense → VPS) wrapping OpenVPN for layered encryption
-- **[802.1X NAC with PacketFence](network/packetfence/README.md)** — AD-integrated RADIUS with EAP-TLS validated on NOC-SURFACE / Cisco Catalyst 3750 Fa3/0/13; broader role/VLAN and wireless validation remains separate
-- **[VLAN Segmentation]** — 8 VLANs with full inter-VLAN ACL policy enforcement
+- **[Secure Remote Access + WARP Egress](network/secure-remote-access.md)** — OpenVPN Access Server behind OPNsense, WireGuard/BGP to VPS, WARP internet egress, and a resolved asymmetric-return routing incident
+- **[802.1X NAC with PacketFence](network/packetfence/README.md)** — AD-integrated RADIUS with EAP-TLS validated on lab access switch / Cisco Cisco Catalyst a test access port; broader role/VLAN and wireless validation remains separate
+- **[VLAN Segmentation]** — segmented VLANs with full inter-VLAN ACL policy enforcement
 - **[Hybrid AD (On-prem → Azure)]** — Azure AD Connect syncing on-premises AD to Azure AD
 - **[Centralized SIEM with Wazuh]** — Log collection from all components with custom detection rules
 - **[Infrastructure Monitoring]** — Zabbix dashboards covering all network and server components
@@ -226,11 +240,9 @@ achahib-lab/
 
 ## ⚠️ Security Notice
 
-All configurations published here are **sanitized**:
-- ❌ No private keys (WireGuard, SSL/TLS)
-- ❌ No credentials, tokens, or API keys
-- ❌ No real public IPs or internal addressing
-- ✅ All sensitive values replaced with safe placeholders
+This is a **sanitized public portfolio**, not an operational runbook. Deliberately excluded: public and private IPs, CIDR blocks, hostnames, interface and port mappings, routing identifiers, user/device counts, keys, credentials, token values and production firewall rules. Conceptual flows are presented for educational use; do not infer that all lab networks use one egress path.
+
+Operational validation: remote OpenVPN authentication and Cloudflare WARP internet egress were tested successfully. The routing service restart passed; a full VPS reboot validation has **not yet been performed**.
 
 ---
 
