@@ -242,8 +242,6 @@ See the [sanitized implementation case study](network/secure-remote-access.md). 
 
 This is a **sanitized public portfolio**, not an operational runbook. Deliberately excluded: public and private IPs, CIDR blocks, hostnames, interface and port mappings, routing identifiers, user/device counts, keys, credentials, token values and production firewall rules. Conceptual flows are presented for educational use; do not infer that all lab networks use one egress path.
 
-Operational validation: remote OpenVPN authentication and Cloudflare WARP internet egress were tested successfully. The routing service restart passed; a full VPS reboot validation has **not yet been performed**.
-
 ---
 
 ## 📬 Connect
