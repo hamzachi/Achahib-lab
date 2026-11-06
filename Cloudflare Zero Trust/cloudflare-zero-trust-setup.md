@@ -2,7 +2,7 @@
 
 > **Stack:** Cisco · OPNsense + Zenarmor · cloudflared Tunnel · Ubuntu Cloudflare Mesh · WARP · Access / Gateway · Microsoft Entra ID  
 > **Status:** ✅ Production — Running in Achahib Lab  
-> **Domain:** `achahib.com`
+ > **Public edition:** addressing, hostnames and tenant details removed
 
 ---
 
@@ -42,7 +42,7 @@ This lab combines application access policies with configured private network ro
 
 > **Legend:** Solid lines = verified traffic · Blue dashed = identity sync · Orange = Zero Trust tunnel
 
-**Key principle:** OPNsense establishes an **outbound-only** Cloudflare Tunnel. No inbound firewall ports are opened. Users cannot reach the services directly — they go through Cloudflare's identity layer first.
+**Key principle:** OPNsense establishes an **outbound-only** Cloudflare Tunnel. No inbound application ports are required for this cloudflared connector. Users cannot reach the services directly — they go through Cloudflare's identity layer first.
 
 ---
 
@@ -50,16 +50,16 @@ This lab combines application access policies with configured private network ro
 
 | Path | Connector | Purpose |
 |---|---|---|
-| Published applications / configured private routes | Achahib-ZEROTRUST — cloudflared on OPNsense | Outbound-only connection to the LAN; no inbound application port forwarding |
-| Selected LAN Internet egress | Achahib-FullTunnel — Ubuntu Cloudflare Mesh (formerly WARP Connector) | Cisco → OPNsense + Zenarmor → Ubuntu Mesh → Cloudflare Gateway → Internet |
+| Published applications / configured private routes | Application tunnel — cloudflared on OPNsense | Outbound-only connection to the LAN; no inbound application port forwarding |
+| Selected LAN Internet egress | Ubuntu Mesh egress node — Ubuntu Cloudflare Mesh (formerly WARP Connector) | Cisco → OPNsense + Zenarmor → Ubuntu Mesh → Cloudflare Gateway → Internet |
 
-AD remains the authority for achahib.local, DNS, Kerberos and GPO. Microsoft Entra ID supplies cloud identity for Access. Remote domain services require the relevant private routes, DNS settings and firewall permissions. The public IP observed by websites depends on the egress/route mode.
+AD remains the authority for internal AD domain, DNS, Kerberos and GPO. Microsoft Entra ID supplies cloud identity for Access. Remote domain services require the relevant private routes, DNS settings and firewall permissions. The public IP observed by websites depends on the egress/route mode.
 
 The original application configuration below remains documented; private-route reachability is additional scope.
 
 ## 🔧 Components
 
-### 1. Cloudflare Tunnel — `Achahib-ZEROTRUST`
+### 1. Cloudflare Tunnel — `Application tunnel`
 
 The tunnel connects my home lab to Cloudflare's network **without opening any inbound ports** on OPNsense or the ISP router.
 
@@ -77,8 +77,8 @@ Internal applications are mapped to public subdomains through the tunnel:
 
 | Route | Internal Service | Exposed? |
 |---|---|---|
-| `nextcloud-achahib.achahib.com` | Nextcloud instance | ❌ Not directly |
-| `server-admin.achahib.com` | Admin portal | ❌ Not directly |
+| `app.example.invalid` | Nextcloud instance | ❌ Not directly |
+| `admin.example.invalid` | Admin portal | ❌ Not directly |
 
 Each URL is accessible **only after passing Zero Trust policies** — not by network location.
 
@@ -94,8 +94,8 @@ Two self-hosted applications are protected by Zero Trust policies:
 
 | Application | URL | Type |
 |---|---|---|
-| Nextcloud-achahib | `nextcloud-achahib.achahib.com` | Self-hosted |
-| Server-Admin | `server-admin.achahib.com` | Self-hosted |
+| Nextcloud-achahib | `app.example.invalid` | Self-hosted |
+| Server-Admin | `admin.example.invalid` | Self-hosted |
 
 ---
 
@@ -114,8 +114,8 @@ Access follows the actual Include, Require and Exclude rules inside each policy.
 
 ### 5. Microsoft Entra ID (Azure AD) — Identity Provider
 
-- **Tenant:** `achahib.com`
-- **Users:** 18 | **Groups:** 13 | **Devices:** 12
+- **Tenant:** `example.invalid`
+- **Users:** not publicly disclosed
 - **Sync:** On-premises Active Directory → Azure AD (via AD Connect)
 
 Users are managed locally in AD and validated in the cloud for Zero Trust authentication. Cloudflare Access uses Azure AD as the Identity Provider (IdP) — users must authenticate via Azure AD before accessing any protected application.
@@ -143,7 +143,7 @@ The device is trusted **only after verification** — not by network location.
 ### 7. Access Flow — What Actually Happens
 
 ```
-User opens nextcloud-achahib.achahib.com
+User opens app.example.invalid
          │
          ▼
 Cloudflare Access intercepts the request
@@ -169,9 +169,9 @@ Does device meet posture requirements?  ──No──► ❌ ACCESS DENIED
 
 ---
 
-### 8. Access Denied — Proof It Works
+### 8. Access Denied — Implementation validation
 
-When a device without WARP connected tries to access `nextcloud-achahib.achahib.com`:
+When a device without WARP connected tries to access `app.example.invalid`:
 
 > **Result:** Cloudflare Access blocks the request with `403 Forbidden` before it ever reaches the internal network.
 
@@ -186,7 +186,7 @@ This proves that:
 
 | Layer | Control | Status |
 |---|---|---|
-| Network | No inbound ports on OPNsense | ✅ |
+| Network | No inbound application port forwarding for cloudflared published apps | ✅ |
 | Tunnel | Outbound-only Cloudflare Tunnel | ✅ |
 | DNS | Gateway DoH filtering | ✅ |
 | Identity | Azure AD authentication | ✅ |
@@ -198,11 +198,17 @@ This proves that:
 
 ## 📝 Lessons Learned
 
-- **Cloudflare Tunnel eliminates port forwarding entirely** — no attack surface on the WAN side
+- **Cloudflare Tunnel avoids inbound port forwarding for its published applications** — no attack surface on the WAN side
 - **Device posture is critical** — identity alone can be compromised; device state adds a second factor
 - **Azure AD as IdP** integrates seamlessly with Cloudflare Access — hybrid AD (on-prem + cloud) works well for this setup
 - **OPNsense + Cloudflare Tunnel** is a powerful combination — OPNsense handles internal security while Cloudflare handles external access control
 - **Segmentation remains necessary** — application policies do not by themselves prevent lateral movement; private network routes also require scoped authorization and firewall controls.
+
+---
+
+## Separate OpenVPN remote-access path
+
+The lab also operates a [separate on-premises OpenVPN remote-access system](../network/secure-remote-access.md) reached through a VPS relay over WireGuard with BGP route exchange. Its clients use VPS-side Cloudflare WARP for internet egress. This does **not** mean OpenVPN sessions are brokered by Cloudflare Access or the cloudflared application tunnel.
 
 ---
 
