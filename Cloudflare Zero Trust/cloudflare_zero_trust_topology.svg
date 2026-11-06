@@ -69,7 +69,7 @@
   <text class="ts" x="536" y="189" text-anchor="middle" dominant-baseline="central">Outbound-only connector</text>
   <text class="ts" x="536" y="205" text-anchor="middle" dominant-baseline="central">No inbound ports open</text>
   <text class="ts" x="536" y="221" text-anchor="middle" dominant-baseline="central">cloudflared on OPNsense</text>
-  <text class="ts" x="536" y="237" text-anchor="middle" dominant-baseline="central">Tunnel: Achahib-ZEROTRUST</text>
+  <text class="ts" x="536" y="237" text-anchor="middle" dominant-baseline="central">Tunnel: Application tunnel</text>
 </g>
 
 <path d="M230,203 L252,203" fill="none" stroke="#854F0B" stroke-width="1.2" marker-end="url(#arrow)"/>
@@ -80,7 +80,7 @@
   <rect x="55" y="278" width="175" height="90" rx="10" stroke-width="0.5"/>
   <text class="th" x="142" y="298" text-anchor="middle" dominant-baseline="central">Microsoft Entra ID</text>
   <text class="ts" x="142" y="315" text-anchor="middle" dominant-baseline="central">Azure AD · Identity Provider</text>
-  <text class="ts" x="142" y="331" text-anchor="middle" dominant-baseline="central">achahib.com · 18 users</text>
+  <text class="ts" x="142" y="331" text-anchor="middle" dominant-baseline="central">Tenant inventory private</text>
   <text class="ts" x="142" y="347" text-anchor="middle" dominant-baseline="central">Synced from on-prem AD</text>
 </g>
 
@@ -103,15 +103,15 @@
 <g class="c-teal">
   <rect x="380" y="503" width="148" height="65" rx="10" stroke-width="0.5"/>
   <text class="th" x="454" y="523" text-anchor="middle" dominant-baseline="central">Nextcloud</text>
-  <text class="ts" x="454" y="540" text-anchor="middle" dominant-baseline="central">nextcloud-achahib</text>
-  <text class="ts" x="454" y="556" text-anchor="middle" dominant-baseline="central">.achahib.com</text>
+  <text class="ts" x="454" y="540" text-anchor="middle" dominant-baseline="central">application</text>
+  <text class="ts" x="454" y="556" text-anchor="middle" dominant-baseline="central">.example.invalid</text>
 </g>
 
 <g class="c-teal">
   <rect x="542" y="503" width="148" height="65" rx="10" stroke-width="0.5"/>
   <text class="th" x="616" y="523" text-anchor="middle" dominant-baseline="central">Server Admin</text>
-  <text class="ts" x="616" y="540" text-anchor="middle" dominant-baseline="central">server-admin</text>
-  <text class="ts" x="616" y="556" text-anchor="middle" dominant-baseline="central">.achahib.com</text>
+  <text class="ts" x="616" y="540" text-anchor="middle" dominant-baseline="central">admin portal</text>
+  <text class="ts" x="616" y="556" text-anchor="middle" dominant-baseline="central">.example.invalid</text>
 </g>
 
 <!-- On-prem AD -->
@@ -189,4 +189,4 @@
 <text class="ts" x="254" y="830" dominant-baseline="central" style="fill:#444441">Identity sync</text>
 <path d="M380,830 L418,830" fill="none" stroke="#854F0B" stroke-width="1.5" marker-end="url(#arrow)"/>
 <text class="ts" x="424" y="830" dominant-baseline="central" style="fill:#444441">Zero Trust tunnel</text>
-<g font-family="Arial, sans-serif"><rect x="20" y="875" width="640" height="231" rx="12" fill="#f3f7fc" stroke="#bacbe0"/><text x="40" y="905" font-size="18" font-weight="700" fill="#102c54">Complementary network and identity paths</text><rect x="36" y="928" width="608" height="70" rx="8" fill="white" stroke="#d3dfec"/><text x="48" y="948" font-size="13" font-weight="700" fill="#243b55">Ubuntu Mesh egress • Achahib-FullTunnel</text><text x="48" y="967" font-size="12" font-weight="400" fill="#243b55">Selected LAN traffic → Cisco → OPNsense / Zenarmor → Ubuntu Mesh</text><text x="48" y="986" font-size="12" font-weight="400" fill="#243b55">Cloudflare Gateway → Internet • separate from cloudflared access</text><rect x="36" y="1011" width="608" height="70" rx="8" fill="white" stroke="#d3dfec"/><text x="48" y="1031" font-size="13" font-weight="700" fill="#243b55">Private routes and identity</text><text x="48" y="1050" font-size="12" font-weight="400" fill="#243b55">WARP → Achahib-ZEROTRUST → configured private LAN destinations</text><text x="48" y="1069" font-size="12" font-weight="400" fill="#243b55">On-prem AD ↔ Entra ID • AD retains DNS, Kerberos and GPO</text></g></svg>
+<g font-family="Arial, sans-serif"><rect x="20" y="875" width="640" height="231" rx="12" fill="#f3f7fc" stroke="#bacbe0"/><text x="40" y="905" font-size="18" font-weight="700" fill="#102c54">Complementary network and identity paths</text><rect x="36" y="928" width="608" height="70" rx="8" fill="white" stroke="#d3dfec"/><text x="48" y="948" font-size="13" font-weight="700" fill="#243b55">Ubuntu Mesh egress • Ubuntu Mesh node</text><text x="48" y="967" font-size="12" font-weight="400" fill="#243b55">Selected LAN traffic → Cisco → OPNsense / Zenarmor → Ubuntu Mesh</text><text x="48" y="986" font-size="12" font-weight="400" fill="#243b55">Cloudflare Gateway → Internet • separate from cloudflared access</text><rect x="36" y="1011" width="608" height="70" rx="8" fill="white" stroke="#d3dfec"/><text x="48" y="1031" font-size="13" font-weight="700" fill="#243b55">Private routes and identity</text><text x="48" y="1050" font-size="12" font-weight="400" fill="#243b55">WARP → Application tunnel → configured private LAN destinations</text><text x="48" y="1069" font-size="12" font-weight="400" fill="#243b55">On-prem AD ↔ Entra ID • AD retains DNS, Kerberos and GPO</text></g></svg>
