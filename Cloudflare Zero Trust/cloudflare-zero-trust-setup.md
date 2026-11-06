@@ -1,6 +1,6 @@
 # Cloudflare Zero Trust — Home Lab Implementation
 
-> **Stack:** OPNsense · Cloudflare Tunnel · Cloudflare WARP · Cloudflare Access · Microsoft Entra ID (Azure AD)  
+> **Stack:** Cisco · OPNsense + Zenarmor · cloudflared Tunnel · Ubuntu Cloudflare Mesh · WARP · Access / Gateway · Microsoft Entra ID  
 > **Status:** ✅ Production — Running in Achahib Lab  
 > **Domain:** `achahib.com`
 
@@ -28,7 +28,7 @@ Every access request is verified based on:
 | Large attack surface | No exposed services, no open ports |
 | Network-based trust | Identity-based trust |
 
-Traditional VPN connects users to a **network**. Zero Trust connects users to **specific applications** — nothing more.
+This lab combines application access policies with configured private network routes. Application Access rules and private network controls must be evaluated separately.
 
 ---
 
@@ -46,6 +46,17 @@ Traditional VPN connects users to a **network**. Zero Trust connects users to **
 
 ---
 
+## Complementary connectivity paths
+
+| Path | Connector | Purpose |
+|---|---|---|
+| Published applications / configured private routes | Achahib-ZEROTRUST — cloudflared on OPNsense | Outbound-only connection to the LAN; no inbound application port forwarding |
+| Selected LAN Internet egress | Achahib-FullTunnel — Ubuntu Cloudflare Mesh (formerly WARP Connector) | Cisco → OPNsense + Zenarmor → Ubuntu Mesh → Cloudflare Gateway → Internet |
+
+AD remains the authority for achahib.local, DNS, Kerberos and GPO. Microsoft Entra ID supplies cloud identity for Access. Remote domain services require the relevant private routes, DNS settings and firewall permissions. The public IP observed by websites depends on the egress/route mode.
+
+The original application configuration below remains documented; private-route reachability is additional scope.
+
 ## 🔧 Components
 
 ### 1. Cloudflare Tunnel — `Achahib-ZEROTRUST`
@@ -53,7 +64,7 @@ Traditional VPN connects users to a **network**. Zero Trust connects users to **
 The tunnel connects my home lab to Cloudflare's network **without opening any inbound ports** on OPNsense or the ISP router.
 
 - **Connector type:** cloudflared (running on OPNsense)
-- **Status:** Healthy — 17h+ uptime
+- **Status:** Reported healthy in the implementation evidence; uptime is a historical observation
 - **Function:** All published app routes go through this tunnel
 
 OPNsense acts as the security gateway — inspecting and filtering traffic before it reaches any internal service.
@@ -97,7 +108,7 @@ Two reusable policies control who can access each application:
 | `Allow-With-WARP` | ALLOW | Requires WARP connected + identity match |
 | `Zero Trust org` | ALLOW | Org-level identity verification |
 
-Access is granted **only when all conditions are met simultaneously** — identity + device posture + policy.
+Access follows the actual Include, Require and Exclude rules inside each policy. Separate Allow policies must not be assumed to combine into one mandatory identity-and-posture check.
 
 ---
 
@@ -191,12 +202,12 @@ This proves that:
 - **Device posture is critical** — identity alone can be compromised; device state adds a second factor
 - **Azure AD as IdP** integrates seamlessly with Cloudflare Access — hybrid AD (on-prem + cloud) works well for this setup
 - **OPNsense + Cloudflare Tunnel** is a powerful combination — OPNsense handles internal security while Cloudflare handles external access control
-- **Per-app access > network access** — if one app is compromised, lateral movement is impossible because users never have network-level access
+- **Segmentation remains necessary** — application policies do not by themselves prevent lateral movement; private network routes also require scoped authorization and firewall controls.
 
 ---
 
 ## 🔗 Related
 
 - [Lab Architecture Overview](/README.md)
-- [OPNsense Configuration](../network/opnsense/)
-- [Azure Hybrid AD Setup](../servers/azure/)
+- [PacketFence NAC](../network/packetfence/README.md)
+- [Centralized Automated Backup](../backup/urbackup/README.md)

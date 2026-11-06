@@ -1,4 +1,4 @@
-<svg width="100%" viewBox="0 0 680 870" role="img" xmlns="http://www.w3.org/2000/svg">
+<svg width="100%" viewBox="0 0 760 1165" role="img" xmlns="http://www.w3.org/2000/svg">
 <title>Cloudflare Zero Trust — Achahib Lab topology</title>
 <desc>End-to-end Zero Trust access flow: End user with WARP to Cloudflare network then OPNsense then internal apps. Identity via Azure AD, device posture via WARP.</desc>
 <defs>
@@ -49,7 +49,7 @@
   <text class="ts" x="142" y="189" text-anchor="middle" dominant-baseline="central">Identity check</text>
   <text class="ts" x="142" y="205" text-anchor="middle" dominant-baseline="central">Device posture (WARP)</text>
   <text class="ts" x="142" y="221" text-anchor="middle" dominant-baseline="central">Policy enforcement</text>
-  <text class="ts" x="142" y="237" text-anchor="middle" dominant-baseline="central">Per-app, not network</text>
+  <text class="ts" x="142" y="237" text-anchor="middle" dominant-baseline="central">App access policies</text>
 </g>
 
 <!-- CF Gateway -->
@@ -189,4 +189,4 @@
 <text class="ts" x="254" y="830" dominant-baseline="central" style="fill:#444441">Identity sync</text>
 <path d="M380,830 L418,830" fill="none" stroke="#854F0B" stroke-width="1.5" marker-end="url(#arrow)"/>
 <text class="ts" x="424" y="830" dominant-baseline="central" style="fill:#444441">Zero Trust tunnel</text>
-</svg>
+<g font-family="Arial, sans-serif"><rect x="20" y="875" width="640" height="231" rx="12" fill="#f3f7fc" stroke="#bacbe0"/><text x="40" y="905" font-size="18" font-weight="700" fill="#102c54">Complementary network and identity paths</text><rect x="36" y="928" width="608" height="70" rx="8" fill="white" stroke="#d3dfec"/><text x="48" y="948" font-size="13" font-weight="700" fill="#243b55">Ubuntu Mesh egress • Achahib-FullTunnel</text><text x="48" y="967" font-size="12" font-weight="400" fill="#243b55">Selected LAN traffic → Cisco → OPNsense / Zenarmor → Ubuntu Mesh</text><text x="48" y="986" font-size="12" font-weight="400" fill="#243b55">Cloudflare Gateway → Internet • separate from cloudflared access</text><rect x="36" y="1011" width="608" height="70" rx="8" fill="white" stroke="#d3dfec"/><text x="48" y="1031" font-size="13" font-weight="700" fill="#243b55">Private routes and identity</text><text x="48" y="1050" font-size="12" font-weight="400" fill="#243b55">WARP → Achahib-ZEROTRUST → configured private LAN destinations</text><text x="48" y="1069" font-size="12" font-weight="400" fill="#243b55">On-prem AD ↔ Entra ID • AD retains DNS, Kerberos and GPO</text></g></svg>

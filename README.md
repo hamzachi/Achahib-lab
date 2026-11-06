@@ -9,7 +9,7 @@
 [![VPN](https://img.shields.io/badge/VPN-WireGuard%20%2B%20OpenVPN-green?style=flat-square)](.)
 [![Virtualization](https://img.shields.io/badge/Virtualization-ESXi%20%2B%20Hyper--V-purple?style=flat-square)](.)
 [![Cloud](https://img.shields.io/badge/Cloud-Azure%20%2B%20Cloudflare%20ZT-orange?style=flat-square)](.)
-[![NAC](https://img.shields.io/badge/NAC-Cisco%20ISE%20802.1X-lightgrey?style=flat-square)](.)
+[![NAC](https://img.shields.io/badge/NAC-PacketFence%20EAP--TLS-lightgrey?style=flat-square)](.)
 
 </div>
 
@@ -50,7 +50,9 @@ Hi, I'm **Hamza** — an IT Engineer based in Morocco with **5+ years of experie
 
 ---
 
-## 📂 Repository Structure
+## 📂 Documentation Layout
+
+The tree below is the planned documentation layout; only published sections are linked in the index that follows.
 
 ```
 achahib-lab/
@@ -58,7 +60,7 @@ achahib-lab/
 │   ├── opnsense/             # OPNsense + Zenarmor configs (sanitized)
 │   ├── cisco-router/         # Inter-VLAN routing, ACLs, QoS
 │   ├── cisco-switch/         # VLAN trunking, 802.1X port configs
-│   ├── cisco-ise/            # ISE policies, RADIUS, NAC profiles
+│   ├── packetfence/            # ISE policies, RADIUS, NAC profiles
 │   └── diagrams/             # Network topology diagrams
 ├── 📁 vlans/
 │   ├── vlan-table.md         # Full VLAN documentation
@@ -95,6 +97,16 @@ achahib-lab/
 
 ---
 
+### Published documentation
+
+- [Cloudflare Zero Trust](Cloudflare%20Zero%20Trust/cloudflare-zero-trust-setup.md)
+- [PacketFence NAC implementation](network/packetfence/README.md)
+- [Centralized automated backup](backup/urbackup/README.md)
+- [HMIND Chat Agent](hmind%20AI%20Agent/chat-agent.md)
+- [HMIND HNTA](hmind%20AI%20Agent/hnta.md)
+- [HMIND HSOC](hmind%20AI%20Agent/hsoc.md)
+- [HMIND Networking](hmind%20AI%20Agent/networking.md)
+
 ## 🧩 Lab Components
 
 ### 🔐 Network Security & Edge
@@ -105,7 +117,7 @@ achahib-lab/
 | **Zenarmor** | NGFW Plugin | IDS/IPS, SNI inspection, app-layer control, TLS inspection |
 | **Cisco Router** | Distribution Layer | Inter-VLAN routing, ACLs, QoS, policy enforcement |
 | **Cisco Switch** | Layer 2 Core | VLAN trunking, port segmentation, 802.1X enforcement |
-| **Cisco ISE** | NAC / AAA | 802.1X auth, identity-based access, RADIUS |
+| **PacketFence** | NAC / AAA | AD integration, RADIUS, wired 802.1X EAP-TLS; NOC-SURFACE validated on Catalyst 3750 |
 
 ---
 
@@ -115,9 +127,16 @@ achahib-lab/
 |---|---|---|
 | **Cloudflare WARP** | Zero Trust Client | Encrypted tunnel to Cloudflare network from any device |
 | **Cloudflare ZTNA** | App Access (Zero Trust) | Access on-prem applications without exposing them to internet |
-| **Cloudflare Gateway** | DNS Security | DoH enforcement, category filtering, malware/phishing blocking |
+| **Cloudflare Gateway** | Cloud Security | DNS/network/web policies, filtering and centralized logs |
+| **Achahib-ZEROTRUST** | cloudflared on OPNsense | Outbound-only connector for published applications and configured private routes |
+| **Achahib-FullTunnel** | Ubuntu Cloudflare Mesh node | Formerly WARP Connector; configured LAN Internet egress through Cloudflare |
+| **Microsoft Entra ID** | Cloudflare identity provider | Hybrid identity with on-prem AD; Access policy authentication |
 
-> 💡 **How it works:** Users connect via **Cloudflare WARP** → traffic goes through **Cloudflare Zero Trust network** → tunneled back to **on-prem applications** via a secure connector — no public IP exposure, no traditional VPN.
+**Remote access:** WARP client → Cloudflare Access / configured private routes → Achahib-ZEROTRUST (cloudflared on OPNsense) → internal services. Access policies protect the configured applications; no inbound application port forwarding is required.
+
+**Cloudflare Internet egress:** Selected LAN traffic → Cisco VLAN gateway → OPNsense + Zenarmor → Ubuntu Mesh node (Achahib-FullTunnel) → Cloudflare Gateway → Internet. Routing policy determines which networks use this path; existing VPN and other egress paths remain separate.
+
+**Identity and domain services:** On-prem AD (`achahib.local`) synchronizes with Microsoft Entra ID. AD remains responsible for DNS, Kerberos and GPO; Cloudflare provides secure connectivity and access controls. Public source IP behavior depends on the selected egress mode.
 
 ---
 
@@ -159,8 +178,9 @@ achahib-lab/
 
 | Component | Role | Key Features |
 |---|---|---|
-| **Rudder** | Config Management | Linux automation, compliance policies, drift detection |
-| **UrBackup** | Backup Solution | Image + file backups, incremental, centralized |
+| **Rudder** | Config Management | Linux automation, compliance policies, drift detection; install_urbackup technique |
+| **UrBackup** | Backup Solution | Centralized server backups; Windows deployment via GPO / Backup_Servers, Linux via Rudder |
+| **SSH backup automation** | Network configuration archive | Daily cron jobs from UrBackup server; Cisco running configs and firewall XML, compressed archives and success/error logs |
 
 ---
 
@@ -171,11 +191,14 @@ achahib-lab/
 - **[DNS over HTTPS Gateway]** — OPNsense + Cloudflare Gateway enforcing network-wide DoH with category-based DNS filtering
 - **[Zero Trust Remote Access]** — Cloudflare WARP + ZTNA replacing traditional VPN — on-prem apps accessible without port forwarding
 - **[Double VPN Architecture]** — WireGuard tunnel (OPNsense → VPS) wrapping OpenVPN for layered encryption
-- **[802.1X NAC with Cisco ISE]** — Identity-based access control with RADIUS across all switch ports
+- **[802.1X NAC with PacketFence](network/packetfence/README.md)** — AD-integrated RADIUS with EAP-TLS validated on NOC-SURFACE / Cisco Catalyst 3750 Fa3/0/13; broader role/VLAN and wireless validation remains separate
 - **[VLAN Segmentation]** — 8 VLANs with full inter-VLAN ACL policy enforcement
 - **[Hybrid AD (On-prem → Azure)]** — Azure AD Connect syncing on-premises AD to Azure AD
 - **[Centralized SIEM with Wazuh]** — Log collection from all components with custom detection rules
 - **[Infrastructure Monitoring]** — Zabbix dashboards covering all network and server components
+
+- **[Cloudflare Mesh Egress](Cloudflare%20Zero%20Trust/cloudflare-zero-trust-setup.md)** — Ubuntu Mesh node for the selected LAN Internet path, alongside cloudflared private access
+- **[Centralized Automated Backup](backup/urbackup/README.md)** — Windows via AD GPO, Linux via Rudder, and daily SSH network configuration archives
 
 ### 🔨 In Progress
 
